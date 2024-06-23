@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from flask import Flask, g
+from flask import Flask, g, render_template
 from sqlalchemy import create_engine
 from models import Base, InitialTable
 from sqlalchemy.orm import sessionmaker
@@ -20,7 +20,7 @@ Session = sessionmaker(bind=engine)
 @app.route("/")
 def index():                              #um order zu setzten brauche ich eine token. Manchmal muss man die updaten
     g.session = Session()
-    return "halslo"
+    return render_template("index.html")
 
 
 
