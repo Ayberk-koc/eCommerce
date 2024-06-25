@@ -17,12 +17,28 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
 
+
+@app.before_request
+def before_request():           #ist es wirklich schlau, jedes mal eine connection zu öffnen? NEIN, mache später raus
+    g.session = Session()       #hier ist die connection zur datenbank! Das "g" ist ein shared object für eine request. Kann es funktionsübergreifend nutzen
+
+@app.teardown_request
+def teardown_request(exception=None):
+    session = getattr(g, 'session', None)
+    if session is not None:
+        session.close()
+
+
+
+
 @app.route("/")
-def index():                              #um order zu setzten brauche ich eine token. Manchmal muss man die updaten
-    g.session = Session()
+def index():
     return render_template("index.html")
 
-
+@app.route("/order")
+def order():
+    #hier mache dass man eine paypal order setzt
+    return
 
 
 
