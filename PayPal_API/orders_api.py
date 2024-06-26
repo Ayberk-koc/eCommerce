@@ -125,8 +125,8 @@ class PayPalAPiHanlder:
     def __init__(self):
         self.__paypal_token_handler = PayPalTokenHandler()          #das "__" damit diese attribute (oder method) private sind, also nur innerhalb der class aufrufbar.
 
-    def __make_post_request(self, json_data, url_next_to_base: str):      #muss irgendwie so machen, dass man diese method nur innerhalb dieser klasse nutzen kann. Damit die nutzung außerhalb der class einfacher ist!
-        def inner(access_token, json_data, url_next_to_base):
+    def __make_post_request(self, url_next_to_base: str, json_data=None):      #muss irgendwie so machen, dass man diese method nur innerhalb dieser klasse nutzen kann. Damit die nutzung außerhalb der class einfacher ist!
+        def inner(access_token, url_next_to_base, json_data):
             """macht die request. Muss mit try except block arbeiten, weil ich mögl den access token updaten muss
             das "url_next_to_base" ist der endpoint (halt bis auf die base url, also zb: '/v2/checkout/orders')
             """
@@ -141,15 +141,15 @@ class PayPalAPiHanlder:
             data = response.json()
             return data
         try:
-            data = inner(self.__paypal_token_handler.access_token, json_data, url_next_to_base)
+            data = inner(self.__paypal_token_handler.access_token, url_next_to_base, json_data)
         except requests.HTTPError as e:
-            data = inner(self.__paypal_token_handler.update_token(), json_data, url_next_to_base)
+            data = inner(self.__paypal_token_handler.update_token(), url_next_to_base, json_data)
         return data
 
 
     def __create_json_for_order(self, prices):
         """erstellt den json string, der als body für die post request gesendet wird"""
-        return_url = current_app.url_for('index', _external=True)   #hier noch die links anpassen
+        return_url = current_app.url_for('capture', _external=True)   #hier noch die links anpassen
         cancel_url = current_app.url_for('index', _external=True)   #hier noch die links anpassen
 
         purchase_units = [PurchaseUnit(Amount(str(elem)), reference_id=str(uuid.uuid4())) for elem in prices]       #reference_id nötig, wenn ich mehrere items habe
@@ -174,13 +174,16 @@ class PayPalAPiHanlder:
         """
 
         json_data = self.__create_json_for_order(prices)                    #mit "__" vorne, kann man diese methods nur innerhalb einer klasse nutzen.
-        data = self.__make_post_request(json_data, '/v2/checkout/orders')
+        data = self.__make_post_request('/v2/checkout/orders', json_data)
         link = data["links"][-1]["href"]
 
-        # with open("order_test_2.json", "w") as file:
-        #     json.dump(data, file, indent=4)
-
         return link
+
+    def capture_payment(self, order_id):
+        url_beyond_base = f"/v2/checkout/orders/{order_id}/capture"
+        data = self.__make_post_request(url_next_to_base=url_beyond_base)
+
+        return data
 
 
 

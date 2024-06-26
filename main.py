@@ -1,4 +1,4 @@
-from flask import Flask, g, render_template
+from flask import Flask, g, render_template, request
 from sqlalchemy import create_engine
 from models import Base, InitialTable
 from sqlalchemy.orm import sessionmaker
@@ -38,6 +38,13 @@ def index():
 def order():
     link = paypal_handler.make_order([10, 20])
     return link
+
+@app.route("/capture")
+def capture():
+    order_id = request.args.get("token")    #die order id steht hier drin. Die aus der request zu suchen ist arsch, weil paypal keine application/json verwendet.
+    data = paypal_handler.capture_payment(order_id)
+    return "hallo"
+
 
 
 
