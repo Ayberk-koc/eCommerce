@@ -1,21 +1,46 @@
-import json
-from flask import url_for
 import uuid
-from update_paypal_token import update_token
 from dotenv import load_dotenv
 import os
 import requests
-from flask import url_for, current_app
+from flask import current_app
 
 
-
+#könnte eine allgemeine klasse machen, die alles paypal sachen handelt! Da müsste ich alles in eine klasse schließen
+#auch das token handling, das Kreieren eines links bei orders und das captures etc. Da Sollte am besten mit abstrakten klassen
+#machen (weil ich immer die "to_dict" methode nutze). Auch mache irgendwie das serialisieren für die json response!
 
 base_url = "https://api-m.sandbox.paypal.com"
 
-load_dotenv()
-CLIENT_ID = os.environ.get("CLIENT_ID")
-APP_SECRET = os.environ.get("APP_SECRET")
-ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
+
+class PayPalTokenHandler:
+    def __init__(self):
+        load_dotenv()
+        self.client_id = os.environ.get("CLIENT_ID")
+        self.app_secret = os.environ.get("APP_SECRET")
+        self.access_token = os.environ.get("ACCESS_TOKEN")
+
+    def update_token(self, path_to_env=".env"):
+        def replace_environ_var(file_path, var_to_replace, new_val):
+            with open(file_path, "r+") as file:
+                data = file.readlines()
+                for i in range(len(data)):
+                    if var_to_replace in data[i]:
+                        elem = '%s="%s"\n' % (var_to_replace, new_val)
+                        data[i] = elem
+                        break
+                file.seek(0)
+                file.writelines(data)
+                file.truncate()
+
+        get_token_endpoint = "/v1/oauth2/token"
+
+        data = {'grant_type': 'client_credentials'}
+        r = requests.post(base_url + get_token_endpoint, data=data, auth=(self.client_id, self.app_secret))
+        r.raise_for_status()
+        self.access_token = r.json()["access_token"]
+        replace_environ_var(path_to_env, "ACCESS_TOKEN", self.access_token)
+
+        return self.access_token
 
 
 class Amount:
@@ -88,61 +113,74 @@ class Order:
 
     def to_dict(self):
         order_dict = self.__dict__
-        if all(isinstance(elem, PurchaseUnit) for elem in self.purchase_units):     #mit all kann ich prüfen, ob alle ein bool sind
+        if all(isinstance(elem, PurchaseUnit) for elem in self.purchase_units):     #mit all kann ich prüfen, ob alle truely sind
             order_dict["purchase_units"] = [elem.to_dict() for elem in self.purchase_units]
         if isinstance(self.payment_source, PaymentSource):
             order_dict["payment_source"] = self.payment_source.to_dict()
         return order_dict
 
 
-def make_request(access_token, json_data):
-    request_id = str(uuid.uuid4())
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {access_token}',
-        'PayPal-Request-Id': f'{request_id}',
-    }
-    response = requests.post(base_url + '/v2/checkout/orders', headers=headers, json=json_data)
-    response.raise_for_status()
-    data = response.json()
-    return data
 
-def make_orders_vorlaufig(prices):
-    """
-    Does the post-request
-    :param prices: tuple with prices of the items, as float with this
-    :return:
-    """
+class PayPalAPiHanlder:
+    def __init__(self):
+        self.__paypal_token_handler = PayPalTokenHandler()          #das "__" damit diese attribute (oder method) private sind, also nur innerhalb der class aufrufbar.
 
-    # mache hier auch den token update, falls es nicht klappt. Das kannst du über einen try machen.
-    #update_token()
+    def __make_post_request(self, json_data, url_next_to_base: str):      #muss irgendwie so machen, dass man diese method nur innerhalb dieser klasse nutzen kann. Damit die nutzung außerhalb der class einfacher ist!
+        def inner(access_token, json_data, url_next_to_base):
+            """macht die request. Muss mit try except block arbeiten, weil ich mögl den access token updaten muss
+            das "url_next_to_base" ist der endpoint (halt bis auf die base url, also zb: '/v2/checkout/orders')
+            """
+            request_id = str(uuid.uuid4())
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {access_token}',
+                'PayPal-Request-Id': f'{request_id}',
+            }
+            response = requests.post(base_url + url_next_to_base, headers=headers, json=json_data)
+            response.raise_for_status()
+            data = response.json()
+            return data
+        try:
+            data = inner(self.__paypal_token_handler.access_token, json_data, url_next_to_base)
+        except requests.HTTPError as e:
+            data = inner(self.__paypal_token_handler.update_token(), json_data, url_next_to_base)
+        return data
 
-    return_url = current_app.url_for('capture', _external=True)
-    cancel_url = current_app.url_for('index', _external=True)
 
-    purchase_units = [PurchaseUnit(Amount(str(elem)), reference_id=str(uuid.uuid4())) for elem in prices]       #reference_id nötig, wenn ich mehrere items habe
-    experience_context = ExperienceContext(return_url=return_url, cancel_url=cancel_url)
-    paypal_wallet = PaypalWallet(experience_context)
-    payment_source = PaymentSource(paypal_wallet)
-    order = Order(intent="CAPTURE", purchase_units=purchase_units, payment_source=payment_source)
+    def __create_json_for_order(self, prices):
+        """erstellt den json string, der als body für die post request gesendet wird"""
+        return_url = current_app.url_for('index', _external=True)   #hier noch die links anpassen
+        cancel_url = current_app.url_for('index', _external=True)   #hier noch die links anpassen
 
-    # with open("test_api_obj.json", "w") as file:
-    #     data = order.to_dict()
-    #     json.dump(data, file, indent=4)
+        purchase_units = [PurchaseUnit(Amount(str(elem)), reference_id=str(uuid.uuid4())) for elem in prices]       #reference_id nötig, wenn ich mehrere items habe
+        experience_context = ExperienceContext(return_url=return_url, cancel_url=cancel_url)
+        paypal_wallet = PaypalWallet(experience_context)
+        payment_source = PaymentSource(paypal_wallet)
+        order = Order(intent="CAPTURE", purchase_units=purchase_units, payment_source=payment_source)
 
-    json_data = order.to_dict()
+        # with open("test_api_obj.json", "w") as file:
+        #     data = order.to_dict()
+        #     json.dump(data, file, indent=4)
 
-    try:
-        data = make_request(ACCESS_TOKEN, json_data)
-    except requests.HTTPError as e:
-        data = make_request(update_token(), json_data)
+        json_data = order.to_dict()
+        return json_data
 
-    link = data["links"][-1]["href"]
 
-    # with open("order_test_2.json", "w") as file:
-    #     json.dump(data, file, indent=4)
+    def make_order(self, prices):
+        """
+        Does the post-request
+        :param prices: tuple with prices of the items, as float with this
+        :return:
+        """
 
-    return link
+        json_data = self.__create_json_for_order(prices)                    #mit "__" vorne, kann man diese methods nur innerhalb einer klasse nutzen.
+        data = self.__make_post_request(json_data, '/v2/checkout/orders')
+        link = data["links"][-1]["href"]
+
+        # with open("order_test_2.json", "w") as file:
+        #     json.dump(data, file, indent=4)
+
+        return link
 
 
 

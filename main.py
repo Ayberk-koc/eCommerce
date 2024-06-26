@@ -1,10 +1,9 @@
-from dotenv import load_dotenv
 from flask import Flask, g, render_template
 from sqlalchemy import create_engine
 from models import Base, InitialTable
 from sqlalchemy.orm import sessionmaker
-import os
-load_dotenv()
+from PayPal_API.orders_api import PayPalAPiHanlder
+
 
 
 app = Flask(__name__)
@@ -15,7 +14,7 @@ app.config["SECRET_KEY"] = "password für die session"
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
-
+paypal_handler = PayPalAPiHanlder()
 
 
 @app.before_request
@@ -37,8 +36,8 @@ def index():
 
 @app.route("/order")
 def order():
-    #hier mache dass man eine paypal order setzt
-    return
+    link = paypal_handler.make_order([10, 20])
+    return link
 
 
 
