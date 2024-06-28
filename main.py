@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from models import Base, InitialTable
 from sqlalchemy.orm import sessionmaker
 from PayPal_API.paypal_sdk import PayPalAPiHanlder
-
+from flask_sqlalchemy import SQLAlchemy
 
 
 #sollte auch eine app configuration datei machen. Dort schreibe ich dann auch die paypal base url rein.
@@ -12,22 +12,25 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root:pin11221122@localhost/flask_tut"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["SECRET_KEY"] = "password für die session"
-
-engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
+db = SQLAlchemy(app)
 paypal_handler = PayPalAPiHanlder()
 
 
-@app.before_request
-def before_request():           #ist es wirklich schlau, jedes mal eine connection zu öffnen? NEIN, mache später raus
-    g.session = Session()       #hier ist die connection zur datenbank! Das "g" ist ein shared object für eine request. Kann es funktionsübergreifend nutzen
+# engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+# Base.metadata.create_all(engine)
+# Session = sessionmaker(bind=engine)
 
-@app.teardown_request
-def teardown_request(exception=None):
-    session = getattr(g, 'session', None)
-    if session is not None:
-        session.close()
+
+
+# @app.before_request
+# def before_request():           #ist es wirklich schlau, jedes mal eine connection zu öffnen? NEIN, mache später raus
+#     g.session = Session()       #hier ist die connection zur datenbank! Das "g" ist ein shared object für eine request. Kann es funktionsübergreifend nutzen
+#
+# @app.teardown_request
+# def teardown_request(exception=None):
+#     session = getattr(g, 'session', None)
+#     if session is not None:
+#         session.close()
 
 
 @app.route("/")

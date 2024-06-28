@@ -7,6 +7,7 @@ from flask import current_app
 base_url = "https://api-m.sandbox.paypal.com"
 
 
+
 #achte, dass hier auch nur eine klasse mit einer klass method gemacht wurde.
 #Mache dir gedanken, warum das so gut ist.
 class ObjectToDictConverter:
@@ -20,6 +21,7 @@ class ObjectToDictConverter:
         elif isinstance(obj, (list, tuple)):
             return [cls.convert(item) for item in obj]
         return obj
+
 
 
 class Amount:
