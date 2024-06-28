@@ -1,5 +1,5 @@
 from flask import Flask, g, render_template, request, redirect, url_for
-from models import User, Base
+from models import User, Base, Product, Address, Cart, CartItem, Order, OrderItem
 
 #sollte auch eine app configuration datei machen. Dort schreibe ich dann auch die paypal base url rein.
 
@@ -31,9 +31,8 @@ def teardown_request(exception=None):
 
 @app.route("/")
 def index():
-    user = g.session.query(User).first()
-    print(user.email)
-    return render_template("index.html")
+    products = g.session.query(Product).all()
+    return render_template("index.html", products=products)
 
 @app.route("/order")
 def order():
