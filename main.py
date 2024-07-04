@@ -1,5 +1,8 @@
+import os
+
 from flask import Flask, g, render_template, request, redirect, url_for
 from models import User, Base, Product, Address, Cart, CartItem, Order, OrderItem
+from dotenv import load_dotenv
 
 #sollte auch eine app configuration datei machen. Dort schreibe ich dann auch die paypal base url rein.
 
@@ -9,7 +12,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["SECRET_KEY"] = "password für die session"
 
 from PayPal_API.paypal_sdk import PayPalAPiHanlder
-paypal_handler = PayPalAPiHanlder()
+load_dotenv("./PayPal_API/paypal_credentials.env")
+PAYPAL_CLIENT_ID = os.environ.get("CLIENT_ID")
+PAYPAL_APP_SECRET = os.environ.get("APP_SECRET")
+paypal_handler = PayPalAPiHanlder(PAYPAL_CLIENT_ID, PAYPAL_APP_SECRET)
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

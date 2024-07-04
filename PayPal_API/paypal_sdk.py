@@ -1,10 +1,9 @@
+
 import uuid
-from dotenv import load_dotenv
-import os
 import requests
 from flask import current_app
-
-base_url = "https://api-m.sandbox.paypal.com"
+from time import sleep
+from datetime import datetime, timedelta
 
 
 
@@ -67,35 +66,52 @@ class Order:
         self.payment_source = payment_source
         self.application_context = application_context
 
+
+class PayPalAPIError(Exception):
+    """Base exception class for Printify API errors."""
+    pass
+
+
+# mache das token handling und das mit den request funktion!!
 class PayPalAPiHanlder:
-    def __init__(self):
-        load_dotenv()
-        self.__client_id = os.environ.get("CLIENT_ID")  #das "__" damit diese attribute (oder method) private sind, also nur innerhalb der class verwendet werden können
-        self.__app_secret = os.environ.get("APP_SECRET")
-        self.__access_token = os.environ.get("ACCESS_TOKEN")
+    def __init__(self, client_id, app_secret):
+        self.__client_id = client_id
+        self.__app_secret = app_secret
+        self.__base_url = "https://api-m.sandbox.paypal.com"
+        self.__access_token = None
+        self.__token_expiry = None
+        # self.__token_file = token_file        #wenn ich alternative speichermethode für den token haben will, implementiere so
+        # self.__load_token()
 
-    def __update_token(self, path_to_env=".env"):
-        def replace_environ_var(file_path, var_to_replace, new_val):
-            with open(file_path, "r+") as file:
-                data = file.readlines()
-                for i in range(len(data)):
-                    if var_to_replace in data[i]:
-                        elem = '%s="%s"\n' % (var_to_replace, new_val)
-                        data[i] = elem
-                        break
-                file.seek(0)
-                file.writelines(data)
-                file.truncate()
 
+    #falls ich token in einer file speichern will implementiere damit
+    # def __load_token(self):
+    #     if os.path.exists(self.__token_file):
+    #         with open(self.__token_file, "r") as file:
+    #             data = json.load(file)
+    #             self.__access_token = data["access_token"]
+    #             self.__token_expiry = datetime.fromisoformat(data["expiry"])
+
+    def __get_new_token(self):   #hier eine art von error handling noch machen.
         get_token_endpoint = "/v1/oauth2/token"
-
         data = {'grant_type': 'client_credentials'}
-        r = requests.post(base_url + get_token_endpoint, data=data, auth=(self.__client_id, self.__app_secret))
-        r.raise_for_status()
-        self.__access_token = r.json()["access_token"]
-        replace_environ_var(path_to_env, "ACCESS_TOKEN", self.__access_token)
 
-        return self.__access_token
+        r = requests.post(self.__base_url + get_token_endpoint, data=data,
+                          auth=(self.__client_id, self.__app_secret))
+        r.raise_for_status()
+        token_data = r.json()
+        self.__access_token = token_data["access_token"]
+        self.__token_expiry = datetime.now() + timedelta(seconds=token_data['expires_in'] - 300)
+
+        #falls ich token in einer file speichern möchte, implementiere damit
+        # with open(self.__token_file, "w") as file:
+        #     token_data = {"access_token": self.__access_token, "expiry": self.__token_expiry.isoformat()}
+        #     json.dump(token_data, file, indent=4)
+
+    def __ensure_valid_token(self):
+        if self.__access_token is None or datetime.now() >= self.__token_expiry:
+            self.__get_new_token()
+
 
     def __create_Amount(self, value: str, currency_code: str = "EUR"):
         return Amount(value, currency_code)
@@ -130,26 +146,36 @@ class PayPalAPiHanlder:
 
         return dict_data
 
-    def __make_post_request(self, url_next_to_base: str, dict_data=None):      #muss irgendwie so machen, dass man diese method nur innerhalb dieser klasse nutzen kann. Damit die nutzung außerhalb der class einfacher ist!
-        def inner(access_token, url_next_to_base, dict_data):
-            """macht die request. Muss mit try except block arbeiten, weil ich mögl den access token updaten muss
-            das "url_next_to_base" ist der endpoint (halt bis auf die base url, also zb: '/v2/checkout/orders')
-            """
-            request_id = str(uuid.uuid4())
-            headers = {
+
+    def __make_request(self, method, endpoint, data=None, params=None, retry_count=3):
+        self.__ensure_valid_token()
+        url = f"{self.__base_url}{endpoint}"
+        headers = {
                 'Content-Type': 'application/json',
-                'Authorization': f'Bearer {access_token}',
-                'PayPal-Request-Id': f'{request_id}',
+                'Authorization': f'Bearer {self.__access_token}',
+                'PayPal-Request-Id': f'{str(uuid.uuid4())}',
             }
-            response = requests.post(base_url + url_next_to_base, headers=headers, json=dict_data)
-            response.raise_for_status()
-            data = response.json()
-            return data
-        try:
-            data = inner(self.__access_token, url_next_to_base, dict_data)
-        except requests.HTTPError as e:
-            data = inner(self.__update_token(), url_next_to_base, dict_data)
-        return data
+
+        for attempt in range(retry_count):
+            try:
+                response = requests.request(method, url, headers=headers, json=data, params=params)
+
+                if response.status_code == 401:  # Unauthorized, möglicherweise abgelaufener Token
+                    self.__get_new_token()
+                    headers["Authorization"] = f"Bearer {self.__access_token}"
+                    continue  # Versuche die Anfrage erneut mit dem neuen Token
+
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                if attempt == retry_count - 1:
+                    raise PayPalAPIError(f"Request failed: {str(e)}") from e
+
+                # Exponentielles Backoff
+                sleep_time = 2 ** attempt
+                print(f"Request failed. Retrying in {sleep_time} seconds...")
+                sleep(sleep_time)
+
 
     def make_order(self, prices):
         """
@@ -159,14 +185,16 @@ class PayPalAPiHanlder:
         """
 
         dict_data = self.__create_dict_for_order(prices)                    #mit "__" vorne, kann man diese methods nur innerhalb einer klasse nutzen.
-        data = self.__make_post_request('/v2/checkout/orders', dict_data)
+        data = self.__make_request("POST", endpoint="/v2/checkout/orders", data=dict_data)
         link = data["links"][-1]["href"]
 
         return link
 
+
+
     def capture_payment(self, order_id):
-        url_beyond_base = f"/v2/checkout/orders/{order_id}/capture"
-        data = self.__make_post_request(url_next_to_base=url_beyond_base)
+        endpoint = f"/v2/checkout/orders/{order_id}/capture"
+        data = self.__make_request("POST", endpoint=endpoint)
         #hier könnte nur die daten zurück geben, die relevant sind.
         #oder könnte mehrere klassen definieren und oop mäßig diese daten in klassen machen.
 

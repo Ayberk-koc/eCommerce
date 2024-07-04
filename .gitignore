@@ -4,3 +4,5 @@
 /playground
 /database/database_backup.sql
 /database/test-queries.sql
+/PayPal_API/paypal_tokens.json
+/PayPal_API/paypal_credentials.env
