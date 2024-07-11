@@ -6,3 +6,5 @@
 /database/test-queries.sql
 /PayPal_API/paypal_tokens.json
 /PayPal_API/paypal_credentials.env
+/test/test_database/database_test_backup.sql
+/test/test_database/test_queries.sql

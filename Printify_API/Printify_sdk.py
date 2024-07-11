@@ -1,19 +1,33 @@
-import os
-from dotenv import load_dotenv
 import requests
 from time import sleep
-import logging
+
+### WICHTIG ZU IMPLEMENTIEREN ###
 # access tokens nur gültig für 1 jahr
+# die bilder der prdokute irgendwo speichern (ab besten in cloud, da so schneller)
+
+
+### LOW PRIORITY ZU IMPLEMENTIEREN ###
+# mache rein, dass ich verschiedene varianten von einem produkt bekomme (das muss dann auch in die Database)
+# könnte auch machen, dass der customer sein eigenes design auf das produkt machen kann. Dafür gucke orders api.
+
 
 
 ##schreibe die die klassen rein und übertrage dann nur was du braucht in deine DB. Das ist ja die SDK!
-
-class Produkt:
+class Product:
     def __init__(self, id, price, description, tags):
         self.id = id
         self.price = price
         self.description = description
         self.tags = tags
+
+class ImageHolder:
+    def __init__(self, product_id: int, first_img: str, second_img: str, third_img: str, forth_img: str, fifth_img: str):
+        self.product_id = product_id
+        self.first_img = first_img
+        self.second_img = second_img
+        self.third_img = third_img
+        self.forth_img = forth_img
+        self.fifth_img = fifth_img
 
 
 class PrintifyAPIError(Exception):
@@ -31,50 +45,58 @@ class RateLimitError(PrintifyAPIError):
 
 #alles handeln mit der api sowie das parsen der response klärt diese klasse!
 class PrintifyHandler:
-    def __init__(self, shop_id):
+    def __init__(self, shop_id, access_token):
         self.__shop_id = shop_id
-        load_dotenv()
-        self.__token = os.environ.get("PRINTIFY_TOKEN")
         self.__base_url = "https://api.printify.com/v1/"
-        self.__headers = {"Authorization": f"Bearer {self.__token}"}
+        self.__access_token = access_token
 
-        self.__logger = logging.getLogger(__name__)     #was genau ist das hier?
 
     def __make_request(self, method, endpoint, data=None, params=None, retry_count=3):
         url = f"{self.__base_url}{endpoint}"
+        headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {self.__access_token}',
+            }
 
         for attempt in range(retry_count):
             try:
-                response = requests.request(method, url, headers=self.__headers, json=data, params=params)
-                response.raise_for_status()  # Raises an HTTPError for bad responses
-                data = response.json()
-                return data
+                response = requests.request(method, url, headers=headers, json=data, params=params)
+                response.raise_for_status()
+                return response.json()
 
             except requests.exceptions.HTTPError as e:
                 if response.status_code == 401:
-                    #falls der token abläuft, muss ich hier einen neuen generieren.
-                    raise AuthenticationError("Invalid API key") from e
-                elif response.status_code == 429:
-                    if attempt < retry_count - 1:  # don't sleep on the last attempt
-                        sleep_time = 2 ** attempt  # exponential backoff
-                        self.__logger.warning(f"Rate limit hit. Retrying in {sleep_time} seconds.")
-                        sleep(sleep_time)
-                    else:
-                        raise RateLimitError("API rate limit exceeded") from e
-                else:
-                    raise PrintifyAPIError(f"HTTP error occurred: {e}") from e
+                    raise AuthenticationError("Something wrong with authentification") from e
 
             except requests.exceptions.RequestException as e:
-                if attempt < retry_count - 1:
-                    sleep_time = 2 ** attempt
-                    self.__logger.warning(f"Network error occurred. Retrying in {sleep_time} seconds.")
-                    sleep(sleep_time)
-                else:
-                    raise PrintifyAPIError(f"Network error occurred: {e}") from e
+                if attempt == retry_count - 1:
+                    raise PrintifyAPIError(f"Request failed: {str(e)}") from e
 
-    def __get_prodcuts_info(self):
-        full_url = self.__base_url + "shops.json"
-        #hier weiter machen.
+                # Exponentielles Backoff
+                sleep_time = 2 ** attempt
+                print(f"Request failed. Retrying in {sleep_time} seconds...")
+                sleep(sleep_time)
+
+    def get_products_info(self) -> list[Product]:     #die funktion nutze ich, um die datenbank zu füllen.
+        data = self.__make_request("GET", f"shops/{self.__shop_id}/products.json")
+        prodcuts_dict = data["data"]
+        products_objects = []
+        for product_dict in prodcuts_dict:
+            id = product_dict["id"]
+            description = product_dict["description"]
+            tags = product_dict["tags"]
+            price = product_dict["variants"][0]["price"]
+            product_to_append = self.__create_single_product(id, price, description, tags)
+            products_objects.append(product_to_append)
+        return products_objects
+
+    def __create_single_product(self, id, price, description, tags) -> Product:
+        product = Product(id, price, description, tags)
+        return product
+
+    #hier make order: Dafür muss die post request ja die addresse enthalten, brauche also in der frontend eine form für die adresse
+    #den waren korb mache ich danach. Am besten wäre eine: zur kasse button, wo dann alles aus der cart genommen wird.
+    #das ordern muss auch mit dem printify handler gehen, da ich ja von dort die order sende.
 
 
 

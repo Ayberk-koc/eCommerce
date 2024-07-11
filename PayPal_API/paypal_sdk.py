@@ -1,4 +1,3 @@
-
 import uuid
 import requests
 from flask import current_app
@@ -10,15 +9,15 @@ from datetime import datetime, timedelta
 #achte, dass hier auch nur eine klasse mit einer klass method gemacht wurde.
 #Mache dir gedanken, warum das so gut ist.
 class ObjectToDictConverter:
-    @classmethod
-    def convert(cls, obj):
+    @staticmethod
+    def convert(obj):
         """mit '{key: cls.convert(value) for key, value in obj.__dict__.items() if not key.startswith("_") and not callable(value)}'
           könnte ich zusätzlich bestimmte attribute und methods ignoriere (wobei obj.__dict__ eh keine methods enthält! Aber es gibt
           halt das 'callable' welches so verwendet werden kann"""
         if hasattr(obj, "__dict__"):
-            return {key: cls.convert(value) for key, value in obj.__dict__.items()}
+            return {key: ObjectToDictConverter.convert(value) for key, value in obj.__dict__.items()}
         elif isinstance(obj, (list, tuple)):
-            return [cls.convert(item) for item in obj]
+            return [ObjectToDictConverter.convert(item) for item in obj]
         return obj
 
 
@@ -145,7 +144,6 @@ class PayPalAPiHanlder:
         dict_data = ObjectToDictConverter.convert(order)
 
         return dict_data
-
 
     def __make_request(self, method, endpoint, data=None, params=None, retry_count=3):
         self.__ensure_valid_token()

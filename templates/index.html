@@ -76,7 +76,8 @@
                             </div>
                         </div>
                     {% endfor %}
-                    <a href="{{ url_for('order') }}">check out</a>
+                    <a href="{{ url_for('pay') }}">nur paypal test</a>
+                    <a href="{{ url_for('checkout') }}">checkout</a>
                 </div>
             </div>
         </section>
@@ -89,5 +90,38 @@
         <!-- Core theme JS-->
         <script src="js/scripts.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+        <script>
+
+        //  var items_in_cart = localStorage.getItem("items_in_cart");        // mit local-storage speichere ich werte in dem browser des user. kann so texte im html ändern
+        //  if (items_in_cart) {                                              // die ich normalerweise nicht ändern könnte, da js nur die client side ändert und nicht das html
+        //    $('span.badge').text(items_in_cart);
+        //  }
+
+
+          $('.add_to_cart').on('click', function() {
+            var csrfToken = '{{ csrf_token() }}';
+            var item_id = $(this).data('item_id');
+
+            // Send the AJAX request with the token included in the request data
+            $.ajax({
+              url: "{{ url_for('add_to_cart') }}",
+              type: 'post',
+              dataType: 'JSON',
+              data: {
+                item_id: item_id,
+                quantity: 1,            //hier anpassen, wenn ich das passende front-end habe
+                _csrf_token:csrfToken
+              },
+              success: function(response) {
+                $('span.badge').text(response.items_in_cart);
+                localStorage.setItem("items_in_cart", response.items_in_cart);                  // hier setzte ich wert in local storage, damit ich den inhalt bei refresh der seite noch habe
+              },
+              error: function(jqXHR, textStatus, errorThrown) {
+                console.log('Error adding item to cart');
+              }
+            });
+          });
+
+        </script>
     </body>
 </html>

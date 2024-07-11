@@ -3,7 +3,7 @@ USE paypal_flasktut;
 
 
 -- Nutzer
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
@@ -13,7 +13,7 @@ CREATE TABLE users (
 );
 
 -- Adressen
-CREATE TABLE addresses (
+CREATE TABLE IF NOT EXISTS addresses (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     street VARCHAR(100) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE addresses (
 -- );
 
 -- Produkte
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -44,25 +44,28 @@ CREATE TABLE products (
 );
 
 -- Warenkorb
-CREATE TABLE carts (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
+CREATE TABLE IF NOT EXISTS carts (
+    id VARCHAR(40) PRIMARY KEY,          -- hier arbeite ich mit uuid, deswegen varchar als primary key
+    user_id INT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+
 -- Warenkorb-Einträge
-CREATE TABLE cart_items (
+CREATE TABLE IF NOT EXISTS cart_items (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    cart_id INT NOT NULL,
+    cart_id VARCHAR(40) NOT NULL,
     product_id INT NOT NULL,
     quantity INT NOT NULL,
     FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
+
+
 -- Bestellungen
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
@@ -74,7 +77,7 @@ CREATE TABLE orders (
 );
 
 -- Bestellte Artikel
-CREATE TABLE order_items (
+CREATE TABLE IF NOT EXISTS order_items (
     id INT PRIMARY KEY AUTO_INCREMENT,
     order_id INT NOT NULL,
     product_id INT NOT NULL,
@@ -84,7 +87,17 @@ CREATE TABLE order_items (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
-
+-- hier sind bilder für ein produkt gespeichert
+CREATE TABLE IF NOT EXISTS product_images (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_id INT NOT NULL UNIQUE,
+    first_image VARCHAR(100) UNIQUE,
+    second_image VARCHAR(100) UNIQUE,
+    third_image VARCHAR(100) UNIQUE,
+    forth_image VARCHAR(100) UNIQUE,
+    fifth_image VARCHAR(100) UNIQUE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
 
 
 
