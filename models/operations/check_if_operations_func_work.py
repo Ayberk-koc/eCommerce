@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.models import Base
 from product_operations import get_products_info
-from cart_operations import add_to_cart, get_cart_info, remove_from_cart
+from cart_operations import add_to_cart, get_cart_info, remove_from_cart, calc_price_list
 
 
 
@@ -17,12 +17,14 @@ db = TestingSessionLocal()
 
 
 
-#print(get_products_info(db))
 
-# add_to_cart(db, 1, 1, 4)
-remove_from_cart(db, 1, 1)
-print(get_cart_info(db, 1))
+print(get_products_info(db))
 
+add_to_cart(db, "hallo", 1, 3)
+# remove_from_cart(db, "hallo", 2)
+# remove_from_cart(db, 1, 2)
+print(get_cart_info(db, "hallo"))
 
+print(calc_price_list(get_cart_info(db, "hallo")))
 
 

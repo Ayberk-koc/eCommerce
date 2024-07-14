@@ -1,4 +1,21 @@
 from sqlalchemy.inspection import inspect
+from sqlalchemy.orm import Session
+
+
+def parse_query_results(db: Session, query: str, first=False) -> list[dict] | dict | None:
+    """das ist eine funktion, um die ergebnisse der query in der form zu bekommen, in der ich sie möchte
+    so wird jede row als object betrachtet (dictionary) und es werden die rows in einer liste ausgegeben, wie
+    es bei einer json response auch ist"""
+    query_result = db.execute(query)
+    key = query_result.keys()
+    rows = query_result.fetchall()
+
+    result = [dict(zip(key, row)) for row in rows]
+
+    if first:
+        return result[0] if result else None
+    else:
+        return result
 
 
 class ModelSerializer:

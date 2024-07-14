@@ -54,13 +54,16 @@ CREATE TABLE IF NOT EXISTS carts (
 
 -- Warenkorb-Einträge
 CREATE TABLE IF NOT EXISTS cart_items (
-    id INT PRIMARY KEY AUTO_INCREMENT,
     cart_id VARCHAR(40) NOT NULL,
     product_id INT NOT NULL,
-    quantity INT NOT NULL,
+    quantity INT NOT NULL CHECK (quantity > 0),
     FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    PRIMARY KEY (cart_id, product_id)
 );
+
+
+
 
 
 

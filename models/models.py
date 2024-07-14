@@ -49,18 +49,31 @@ class Cart(Base):
     __tablename__ = 'carts'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id = Column(ForeignKey('users.id', ondelete='CASCADE'), index=True)
     created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
 
     user = relationship('User')
 
 
+class ProductImage(Base):
+    __tablename__ = 'product_images'
+
+    id = Column(Integer, primary_key=True)
+    product_id = Column(ForeignKey('products.id', ondelete='CASCADE'), nullable=False, unique=True)
+    first_image = Column(String(100), unique=True)
+    second_image = Column(String(100), unique=True)
+    third_image = Column(String(100), unique=True)
+    forth_image = Column(String(100), unique=True)
+    fifth_image = Column(String(100), unique=True)
+
+    product = relationship('Product')
+
+
 class CartItem(Base):
     __tablename__ = 'cart_items'
 
-    id = Column(Integer, primary_key=True)
-    cart_id = Column(ForeignKey('carts.id', ondelete='CASCADE'), nullable=False, index=True)
-    product_id = Column(ForeignKey('products.id', ondelete='CASCADE'), nullable=False, index=True)
+    cart_id = Column(ForeignKey('carts.id', ondelete='CASCADE'), primary_key=True, nullable=False, index=True)
+    product_id = Column(ForeignKey('products.id', ondelete='CASCADE'), primary_key=True, nullable=False, index=True)
     quantity = Column(Integer, nullable=False)
 
     cart = relationship('Cart')

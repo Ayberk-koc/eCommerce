@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="description" content="" />
         <meta name="author" content="" />
+        <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>Shop Homepage - Start Bootstrap Template</title>
         <!-- Favicon-->
         <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
@@ -85,43 +86,41 @@
         <footer class="py-5 bg-dark">
             <div class="container"><p class="m-0 text-center text-white">Copyright &copy; Your Website 2022</p></div>
         </footer>
-        <!-- Bootstrap core JS-->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Core theme JS-->
-        <script src="js/scripts.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
         <script>
 
-        //  var items_in_cart = localStorage.getItem("items_in_cart");        // mit local-storage speichere ich werte in dem browser des user. kann so texte im html ändern
-        //  if (items_in_cart) {                                              // die ich normalerweise nicht ändern könnte, da js nur die client side ändert und nicht das html
-        //    $('span.badge').text(items_in_cart);
-        //  }
+          var items_in_cart = localStorage.getItem("items_in_cart");        // mit local-storage speichere ich werte in dem browser des user. kann so texte im html ändern
+          if (items_in_cart) {                                              // die ich normalerweise nicht ändern könnte, da js nur die client side ändert und nicht das html
+              $('span.badge').text(items_in_cart);
+          }
 
 
           $('.add_to_cart').on('click', function() {
-            var csrfToken = '{{ csrf_token() }}';
             var item_id = $(this).data('item_id');
+            var csrfToken = $('meta[name="csrf-token"]').attr('content');
 
-            // Send the AJAX request with the token included in the request data
             $.ajax({
               url: "{{ url_for('add_to_cart') }}",
-              type: 'post',
-              dataType: 'JSON',
-              data: {
-                item_id: item_id,
-                quantity: 1,            //hier anpassen, wenn ich das passende front-end habe
-                _csrf_token:csrfToken
+              type: 'POST',
+              dataType: 'json',
+              contentType: 'application/json',
+              headers: {
+                'X-CSRFToken': csrfToken
               },
-              success: function(response) {
-                $('span.badge').text(response.items_in_cart);
-                localStorage.setItem("items_in_cart", response.items_in_cart);                  // hier setzte ich wert in local storage, damit ich den inhalt bei refresh der seite noch habe
+              data: JSON.stringify({
+                item_id: item_id,
+                quantity: 1
+              }),
+              success: function(response) {         //dieses "response" ist die dict die meine method zurück gibt.
+                $('span.badge').text(response.cart.total_items);
+                localStorage.setItem("items_in_cart", response.cart.total_items);
               },
               error: function(jqXHR, textStatus, errorThrown) {
-                console.log('Error adding item to cart');
+                console.log('Error adding item to cart:', errorThrown);
+                console.log('Response:', jqXHR.responseText);
               }
             });
           });
-
         </script>
     </body>
 </html>
