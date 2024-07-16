@@ -74,20 +74,23 @@ def add_to_cart():              #mache, dass man hier nicht über eine url rein 
     return jsonify({"message": "Product added to cart", "cart": cart_data})
 
 
-@app.route("/checkout")
-def checkout():
-    #hier muss ich die produkte in einer card nehmen und ins checkout bringen.
-    #auch mache ich hier, dass man die items in der cart noch ändern kann.
+@app.route("/cart")
+def cart():
     db = next(get_db())
     cart_id = session.get("cart_id")
 
-    card_data = get_cart_info(db, cart_id)  #card data ist entweder leere dict oder gefüllte dict
+    card_data = get_cart_info(db, cart_id)
     products = card_data.get("cart_contents", [])
+
+    return render_template("cart.html", products=products)
+
+@app.route("/checkout")
+def checkout():
 
     #hiernach kommt die bestellung aufgeben!
     #nun muss ich das frontend machen!
 
-    return render_template("checkout_page.html", products=products)    # hier muss die seite gezeigt werden, wo man addresse eingibbt
+    return render_template("checkout_page.html")    # hier muss die seite gezeigt werden, wo man addresse eingibbt
 
 @app.route("/pay")      #hier komme nur hin, wenn ich checkout mache. Hier muss auch noch bezahl methode etc drinne sein.
 def pay():
