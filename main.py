@@ -13,7 +13,9 @@ from models.operations.product_operations import get_products_info
 #in der database benenne id zu product_id (und bei anderen tables auch)
 
 
-#mache bootstrap rein.
+#bilde dich in frontend. gucke welche tools du safe brauchst.
+#wiederhole den js teil. Und gucke wie man modern arbeiten (scss, typescript, frontendframeworks)
+#auch gucke wie man ran geht. Wahrscheinlich nicht mit pycharm, sondern mit prepros.
 
 
 
