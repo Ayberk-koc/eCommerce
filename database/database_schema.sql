@@ -63,10 +63,6 @@ CREATE TABLE IF NOT EXISTS cart_items (
 );
 
 
-
-
-
-
 -- Bestellungen
 CREATE TABLE IF NOT EXISTS orders (
     id INT PRIMARY KEY AUTO_INCREMENT,

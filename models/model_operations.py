@@ -2,20 +2,37 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import Session
 
 
-def parse_query_results(db: Session, query: str, first=False) -> list[dict] | dict | None:
-    """das ist eine funktion, um die ergebnisse der query in der form zu bekommen, in der ich sie möchte
-    so wird jede row als object betrachtet (dictionary) und es werden die rows in einer liste ausgegeben, wie
-    es bei einer json response auch ist"""
+# def parse_query_results(db: Session, query: str, first=False) -> list[dict] | dict | None:
+#     """das ist eine funktion, um die ergebnisse der query in der form zu bekommen, in der ich sie möchte
+#     so wird jede row als object betrachtet (dictionary) und es werden die rows in einer liste ausgegeben, wie
+#     es bei einer json response auch ist"""
+#     query_result = db.execute(query)
+#     key = query_result.keys()
+#     rows = query_result.fetchall()
+#
+#     result = [dict(zip(key, row)) for row in rows]
+#
+#     if first:
+#         return result[0] if result else None
+#     else:
+#         return result
+
+import json
+from decimal import Decimal
+def parse_query_result_as_json(db: Session, query: str) -> dict:
+    """returnt den inhalt wie eine json. Der inhalt ist dabei immer die value von dem "hauptkeyword" dieser wird bereits
+    in der query festgelegt. Also nutze das wenn ich queries mache, die eine json zurückgeben"""
     query_result = db.execute(query)
-    key = query_result.keys()
-    rows = query_result.fetchall()
+    key = list(query_result.keys())
+    key_for_json = key[0]
+    fetch_res = query_result.fetchall()
+    result = [json.loads(row[0], parse_float=Decimal) for row in fetch_res]
 
-    result = [dict(zip(key, row)) for row in rows]
+    return {key_for_json: result}
 
-    if first:
-        return result[0] if result else None
-    else:
-        return result
+
+
+
 
 
 class ModelSerializer:

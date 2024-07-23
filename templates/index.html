@@ -13,7 +13,15 @@
 
 		<!-- Start Header/Navigation -->
 		{% include "nav_bar.html" %}
+		<script>
+			var elem = document.querySelectorAll('nav ul.custom-navbar-nav li');
+			elem[0].classList.toggle('active');
+		</script>
 		<!-- End Header/Navigation -->
+
+
+
+
 
 		<!-- Start Hero Section -->
 			<div class="hero">
@@ -23,7 +31,7 @@
 							<div class="intro-excerpt">
 								<h1>Modern Interior <span class="d-block">Design Studio</span></h1>
 								<p class="mb-4">Donec vitae odio quis nisl dapibus malesuada. Nullam ac aliquet velit. Aliquam vulputate velit imperdiet dolor tempor tristique.</p>
-								<p><a href="" class="btn btn-secondary me-2">Shop Now</a><a href="#" class="btn btn-white-outline">Explore</a></p>
+								<p><a href="{{ url_for('shop') }}" class="btn btn-secondary me-2">Shop Now</a><a href="{{ url_for('shop') }}" class="btn btn-white-outline">Explore</a></p>
 							</div>
 						</div>
 						<div class="col-lg-7">
@@ -45,7 +53,7 @@
 					<div class="col-md-12 col-lg-3 mb-5 mb-lg-0">
 						<h2 class="mb-4 section-title">Crafted with excellent material.</h2>
 						<p class="mb-4">Donec vitae odio quis nisl dapibus malesuada. Nullam ac aliquet velit. Aliquam vulputate velit imperdiet dolor tempor tristique. </p>
-						<p><a href="shop.html" class="btn">Explore</a></p>
+						<p><a href="{{ url_for('shop') }}" class="btn">Explore</a></p>
 					</div> 
 					<!-- End Column 1 -->
 
@@ -180,7 +188,7 @@
 							<li>Donec vitae odio quis nisl dapibus malesuada</li>
 							<li>Donec vitae odio quis nisl dapibus malesuada</li>
 						</ul>
-						<p><a herf="#" class="btn">Explore</a></p>
+						<p><a href="{{ url_for('shop') }}" class="btn">Explore</a></p>
 					</div>
 				</div>
 			</div>
@@ -394,7 +402,8 @@
 		<!-- End Footer Section -->	
 
 
-		<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+<!--	<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>-->
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 		<script src="{{ url_for('static', filename='js/tiny-slider.js') }}"></script>
 		<script src="{{ url_for('static', filename='js/custom.js') }}"></script>
 	</body>
