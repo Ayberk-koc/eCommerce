@@ -1,19 +1,99 @@
 <!-- Modal -->
-<div class="modal fade" id="itemcartModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        ...
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div>
+    <div class="modal fade" role="dialog" tabindex="-1" id="itemcartModal">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="padding-top: 0px;padding-left: 28px;padding-bottom: 0px;">
+                    <h4 class="modal-title">Add Product to Cart</h4><button class="btn-close" type="button" aria-label="Close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container">
+                        <div class="row justify-content-around">
+                            <div class="col-md-12 col-lg">
+                                <div class="row">
+                                    <div class="col-12" style="padding-bottom: 7px;"><img class="img-fluid" src="{{url_for('static', filename='images/Jar.jpg')}}" id="mainImage"></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col d-flex flex-row justify-content-between" id="imageHolder">
+                                        <div style="width: 90px;"><img class="img-fluid" src="{{url_for('static', filename='images/Jar.jpg')}}"></div>
+                                        <div style="width: 90px;"><img class="img-fluid" src="{{url_for('static', filename='images/jar2.jpg')}}"></div>
+                                        <div><img class="img-fluid" src="{{url_for('static', filename='images/jar3.jpg')}}" width="90px" height="90px"></div>
+                                        <div><img class="img-fluid" src="{{url_for('static', filename='images/jar4.jpg')}}" style="width: 90px;"></div>
+                                        <div><img class="img-fluid" src="{{url_for('static', filename='images/jar5.jpg')}}" style="width: 90px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="row">
+                                    <div class="col">
+                                        <h1>Product Title</h1>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col">
+                                        <p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col">
+                                        <h2>Hier Preis</h2>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4 col-xxl-4">
+                                        <h4>Quantity</h4>
+                                    </div>
+                                    <div class="col-12 col-sm">
+                                        <div class="input-group" style="width: 100px;"><button class="btn btn-light border rounded-0 border-2" type="button">-</button><input class="form-control form-control-sm" type="text" inputmode="numeric" placeholder="1"><button class="btn btn-light border rounded-0 border-2" type="button">+</button></div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col d-flex d-xxl-flex justify-content-end justify-content-xxl-end"><button class="btn btn-primary btn-lg" data-bs-toggle="modal" type="button">Add to Cart</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
+<script>
+<!--das ist damit bilder ändern wenn ich darauf klicke-->
+        document.addEventListener("DOMContentLoaded", function () {
+        let images = document.querySelectorAll("div#imageHolder img");
+        let mainImage = document.querySelector("#mainImage");
+
+        images.forEach(function (elem) {
+          elem.addEventListener("click", function () {
+            mainImage.src = elem.src;
+          });
+        });
+      });
+
+<!--das ist damit modal daten die daten vom knopf als input bekommen (also das was gedrückt wurde)-->
+      document.addEventListener("DOMContentLoaded", function () {
+      $('#itemcartModal').on('show.bs.modal', function (event) {
+       var button = $(event.relatedTarget); // Button that triggered the modal
+
+       var itemData = button.data('item'); // Extract info from data-* attributes
+       console.log(itemData);
+
+       var modal = $(this);
+
+       modal.find('h1').text(itemData.name);
+       modal.find('p').text(itemData.description);
+       modal.find('h2').text(itemData.price);
+})});
+
+
+
+<!--      document.addEventListener("DOMContentLoaded", function () {-->
+<!--        var productButton = document.querySelectorAll('div a.product-item');-->
+<!--        //var productData = JSON.parse(productButton.getAttribute('data-item'));-->
+
+<!--          });-->
+<!--        });-->
+<!--      });-->
+
+</script>
+
 <!-- Ende vom Modal -->

@@ -19,9 +19,12 @@ from models.operations.product_operations import get_products_info
 
 
 app = Flask(__name__)
-# app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root:pin11221122@localhost/paypal_flasktut"
+# app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root:pin11221122@localhost/paypal_flasktut" #das in database_handnler.py
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["SECRET_KEY"] = "password für die session"
+
+
+
 
 csrf = CSRFProtect(app)
 
@@ -44,9 +47,9 @@ def index():
 
     db = next(get_db())
     # das ist nun eine liste von dicts. Effektiv wie eine class (denk was class eig ist)!!
-    products = get_products_info(db).get("products", [])
+    products_dict = get_products_info(db) #das ist effektiv eine json mit einem key "products"
 
-    return render_template("index.html", products=products)
+    return render_template("index.html", products_dict=products_dict)
 
 
 @app.route("/add_to_cart", methods=["POST"])  # das noch prüfen. Muss frontend anpassen
@@ -106,8 +109,8 @@ def pay():
 @app.route("/shop")
 def shop():
     db = next(get_db())
-    products = get_products_info(db).get("products", [])
-    return render_template("shop.html", products=products)
+    products_dict = get_products_info(db)    #das ist effektiv eine json
+    return render_template("shop.html", products_dict=products_dict)
 
 
 @app.route("/about")
@@ -139,5 +142,6 @@ def capture():
     return redirect(url_for("index"))
 
 
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True)        #normalerweise muss ich damit runnen. Doch zum testen mache ich mit live server,
